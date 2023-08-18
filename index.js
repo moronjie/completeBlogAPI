@@ -7,6 +7,8 @@ const mongoose = require("mongoose")
 const app = express()
 const connect = require("./model/connect")
 const auth = require("./routes/auth")
+const user = require("./routes/user")
+const blog = require("./routes/blog")
 
 const port = process.env.PORT || 4000
 
@@ -19,6 +21,8 @@ app.use(morgan("common"))
 
 //router
 app.use('/auth', auth)  
+app.use('/user', user)  
+app.use('/blog', blog)  
 
 connect(process.env.db)
 

@@ -7,8 +7,8 @@ const nodemailer = require("nodemailer")
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: process.env.OPT_EMAIL,
-        password: process.env.OPT_PASSWORD 
+        user: 'njiemoro2@gmail.com',
+        pass: process.env.OPT_PASSWORD
     }
 })
 
@@ -49,20 +49,57 @@ router.post('/login', async(req, res, next) =>{
     }
 })
 
-router.post("send", async (req, re) => {
-    const {email} = req.body
-    const otp = Math.floor(100000 * math.random + 900000)
+router.post("/sendotp", async (req, res) => {
+    const {email} = req.body   
+    const otp = Math.floor(100000 * Math.random() + 900000)
     try{
         const mailOption = {
-            From: process.env.OPT_EMAIL,
-            To: email,
+            from: "njiemoro2@gmail.com",
+            to: email,
             subject: "OPT Verification",
             text: `Your OPT verification is ${otp}`
         }
 
+        transporter.sendMail(mailOption, (err, info) => {
+            if(err){
+                return res.status(500).json({"msg": err.message})
+            }
+
+            res.status(200).json({"msg": "an OPT sent to your email"})
+        })
+
+        const user = await User.findOne({email})
+        user.otp = otp
+
+        await user.save()
+
     }catch(err){
         res.status(500).json({'msg': err.message})
     }
+})
+
+router.post("/resetPassword", async (req, res) => {
+    try {
+        const {email, newpassword, otp} = req.body
+        const user = await User.findOne({email: email})
+
+        !user && res.status(403).json({"msg": "user does not exist. Create an account"})
+
+        if(user.otp != otp){
+            res.status(404).json({"msg": "wrong OPT"})
+        }
+        const salt = await bcrypt.genSalt(10)
+        const hashpassword = await bcrypt.hash(newpassword, salt)
+ 
+        user.password = hashpassword
+        user.otp = null 
+        await user.save()  
+
+        res.status(200).json({"msg": "password is reset successfilly"})
+    } catch (error) {
+        
+    }
+
 })
 
 module.exports = router
